@@ -17,6 +17,14 @@ const storageService = {
   },
   saveSelectedGroupId: (groupId) => {
     localStorage.setItem('episodeTracker_selectedGroupId', groupId);
+  },
+
+  // Dark mode preference
+  getDarkMode: () => {
+    return localStorage.getItem('episodeTracker_darkMode') === 'true';
+  },
+  saveDarkMode: (darkMode) => {
+    localStorage.setItem('episodeTracker_darkMode', darkMode.toString());
   }
 };
 
@@ -37,23 +45,24 @@ function App() {
   const [showEpisodeCountInput, setShowEpisodeCountInput] = useState(false);
   const [episodeCount, setEpisodeCount] = useState(1);
   const [startingEpisodeNumber, setStartingEpisodeNumber] = useState(1);
-  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
 
   // Load data from localStorage on component mount
   useEffect(() => {
     const savedGroups = storageService.getGroups();
     const savedSelectedGroupId = storageService.getSelectedGroupId();
+    const savedDarkMode = storageService.getDarkMode();
 
     setGroups(savedGroups);
     // Convert to number if it's a string
     setSelectedGroupId(savedSelectedGroupId ? parseInt(savedSelectedGroupId) : null);
+    setDarkMode(savedDarkMode);
 
     // If no groups exist, create a default group
     if (savedGroups.length === 0) {
       const defaultGroup = {
         id: Date.now(),
         title: 'Default Group',
-        backgroundColor: '#ffffff',
         episodes: [],
         created_at: new Date().toISOString()
       };
@@ -74,6 +83,10 @@ function App() {
       storageService.saveSelectedGroupId(selectedGroupId);
     }
   }, [selectedGroupId]);
+
+  useEffect(() => {
+    storageService.saveDarkMode(darkMode);
+  }, [darkMode]);
 
   // Focus on number input when Add Scene modal opens
   useEffect(() => {
@@ -142,11 +155,10 @@ function App() {
   };
 
   // Group functions
-  const createGroup = (title, backgroundColor = '#ffffff') => {
+  const createGroup = (title) => {
     const newGroup = {
       id: Date.now(),
       title,
-      backgroundColor,
       episodes: [],
       created_at: new Date().toISOString()
     };
@@ -155,9 +167,9 @@ function App() {
     return newGroup;
   };
 
-  const updateGroup = (id, title, backgroundColor) => {
+  const updateGroup = (id, title) => {
     const updatedGroups = groups.map(group =>
-      group.id === id ? { ...group, title, backgroundColor } : group
+      group.id === id ? { ...group, title } : group
     );
     setGroups(updatedGroups);
   };
@@ -445,12 +457,22 @@ function App() {
   };
 
   const getSceneTextColor = (state) => {
-    switch (state) {
-      case 'not-ready': return 'text-gray-700';
-      case 'ready-to-edit': return 'text-orange-600';
-      case 'done': return 'text-green-600';
-      case 'cancelled': return 'text-red-600';
-      default: return 'text-gray-700';
+    if (darkMode) {
+      switch (state) {
+        case 'not-ready': return 'text-white';
+        case 'ready-to-edit': return 'text-orange-400';
+        case 'done': return 'text-green-400';
+        case 'cancelled': return 'text-red-400';
+        default: return 'text-white';
+      }
+    } else {
+      switch (state) {
+        case 'not-ready': return 'text-gray-700';
+        case 'ready-to-edit': return 'text-orange-600';
+        case 'done': return 'text-green-600';
+        case 'cancelled': return 'text-red-600';
+        default: return 'text-gray-700';
+      }
     }
   };
 
@@ -482,8 +504,6 @@ function App() {
 
   const getEpisodeBackgroundColor = (episode) => {
     const progress = getEpisodeProgress(episode);
-    const selectedGroup = getSelectedGroup();
-    const groupColor = selectedGroup?.backgroundColor || '#ffffff';
     
     if (progress === 100 && episode.scenes.length > 0) {
       return 'border-green-200';
@@ -493,13 +513,11 @@ function App() {
 
   const getEpisodeBackgroundStyle = (episode) => {
     const progress = getEpisodeProgress(episode);
-    const selectedGroup = getSelectedGroup();
-    const groupColor = selectedGroup?.backgroundColor || '#ffffff';
     
     if (progress === 100 && episode.scenes.length > 0) {
-      return { backgroundColor: '#f0fdf4' }; // Light green for completed episodes
+      return { backgroundColor: darkMode ? '#064e3b' : '#f0fdf4' }; // Dark/light green for completed episodes
     }
-    return { backgroundColor: groupColor + '10' }; // 10% opacity of group color
+    return { backgroundColor: darkMode ? '#1f2937' : '#ffffff' }; // Dark/light background
   };
 
   const getSelectedGroup = () => {
@@ -685,8 +703,7 @@ function App() {
 
   const handleSaveGroup = () => {
     if (editingGroup && editGroupTitle.trim()) {
-      const currentGroup = groups.find(g => g.id === editingGroup);
-      updateGroup(editingGroup, editGroupTitle.trim(), currentGroup?.backgroundColor || '#ffffff');
+      updateGroup(editingGroup, editGroupTitle.trim());
       setEditingGroup(null);
       setEditGroupTitle('');
     }
@@ -697,27 +714,35 @@ function App() {
     setEditGroupTitle('');
   };
 
-  const handleColorChange = (groupId, color) => {
-    const group = groups.find(g => g.id === groupId);
-    if (group) {
-      updateGroup(groupId, group.title, color);
-    }
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
   };
 
   const stats = getGlobalStats();
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6">
+    <div className={`min-h-screen py-6 ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
       <div className="max-w-7xl mx-auto px-4">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center">
+        <h1 className={`text-3xl font-bold mb-4 text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
           <span>THUIS!</span> <span className="text-2xl">Episode Tracker</span>
         </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Left Column - Group Management */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-3 sticky top-4">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-3 sticky top-4`}>
               <div className="flex items-center justify-end gap-2 mb-4">
+                <button
+                  onClick={toggleDarkMode}
+                  className={`px-3 py-1.5 rounded text-sm focus:outline-none focus:ring-2 ${
+                    darkMode 
+                      ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-400 focus:ring-yellow-500' 
+                      : 'bg-gray-700 text-white hover:bg-gray-600 focus:ring-gray-500'
+                  }`}
+                  title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                >
+                  {darkMode ? '☀️' : '🌙'}
+                </button>
                 <button
                   onClick={() => setShowStats(true)}
                   className="px-4 py-1.5 bg-gray-500 text-white text-sm rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
@@ -752,28 +777,16 @@ function App() {
                       className={`rounded-lg p-2 border cursor-move transition-colors ${
                         selectedGroupId === group.id 
                           ? 'border-blue-300' 
-                          : 'border-gray-200'
+                          : darkMode ? 'border-gray-600' : 'border-gray-200'
                       } ${
                         draggedGroup === group.id ? 'opacity-50' : ''
                       } ${
                         dragOverGroup === group.id ? 'border-blue-400' : ''
+                      } ${
+                        selectedGroupId === group.id 
+                          ? darkMode ? 'bg-blue-900' : 'bg-blue-50'
+                          : darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'
                       }`}
-                      style={{
-                        backgroundColor: selectedGroupId === group.id 
-                          ? `${group.backgroundColor || '#ffffff'}20` // 20% opacity for selected
-                          : group.backgroundColor || '#f9fafb',
-                        borderColor: selectedGroupId === group.id ? '#3b82f6' : '#e5e7eb'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (selectedGroupId !== group.id && !draggedGroup) {
-                          e.target.style.backgroundColor = `${group.backgroundColor || '#ffffff'}30`;
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (selectedGroupId !== group.id && !draggedGroup) {
-                          e.target.style.backgroundColor = group.backgroundColor || '#f9fafb';
-                        }
-                      }}
                     >
                       {editingGroup === group.id ? (
                         <div className="flex flex-col gap-2">
@@ -781,19 +794,13 @@ function App() {
                             type="text"
                             value={editGroupTitle}
                             onChange={(e) => setEditGroupTitle(e.target.value)}
-                            className="text-sm font-semibold text-gray-800 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={`text-sm font-semibold px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                              darkMode 
+                                ? 'text-white bg-gray-700 border-gray-600' 
+                                : 'text-gray-800 bg-white border-gray-300'
+                            }`}
                             onKeyPress={(e) => e.key === 'Enter' && handleSaveGroup()}
                           />
-                          <div className="flex items-center gap-2">
-                            <label className="text-xs text-gray-600">Color:</label>
-                            <input
-                              type="color"
-                              value={group.backgroundColor || '#ffffff'}
-                              onChange={(e) => handleColorChange(group.id, e.target.value)}
-                              className="w-8 h-6 border border-gray-300 rounded cursor-pointer"
-                              title="Choose background color"
-                            />
-                          </div>
                           <div className="flex gap-1">
                             <button
                               onClick={() => handleSaveGroup()}
@@ -815,8 +822,8 @@ function App() {
                             className="flex-1 cursor-pointer"
                             onClick={() => setSelectedGroupId(group.id)}
                           >
-                            <h3 className="text-sm font-semibold text-gray-800">{group.title}</h3>
-                            <p className="text-xs text-gray-600">{group.episodes.length} episodes</p>
+                            <h3 className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{group.title}</h3>
+                            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{group.episodes.length} episodes</p>
                           </div>
                           <div className="flex gap-1">
                             <button
@@ -841,9 +848,9 @@ function App() {
 
               {/* Selected Group Progress and Add Episode */}
               {selectedGroupId && (
-                <div className="bg-gray-50 rounded-lg p-3">
+                <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-3`}>
                   <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-md font-semibold text-gray-800">
+                    <h3 className={`text-md font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                       {getSelectedGroup()?.title} - Progress
                     </h3>
                     <button
@@ -858,8 +865,8 @@ function App() {
                     {/* Scenes Progress */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <h4 className="text-sm font-semibold text-gray-700">Scenes Progress</h4>
-                        <span className="text-xs font-medium text-gray-600">{getTotalProgressText()}</span>
+                        <h4 className={`text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Scenes Progress</h4>
+                        <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{getTotalProgressText()}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
@@ -872,8 +879,8 @@ function App() {
                     {/* Episodes Progress */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <h4 className="text-sm font-semibold text-gray-700">Episodes Progress</h4>
-                        <span className="text-xs font-medium text-gray-600">{getCompletedEpisodesText()}</span>
+                        <h4 className={`text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Episodes Progress</h4>
+                        <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{getCompletedEpisodesText()}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
@@ -926,7 +933,7 @@ function App() {
                           </div>
                         ) : (
                           <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-gray-800 cursor-pointer hover:text-blue-600" onClick={() => handleEditEpisode(episode)}>
+                            <h3 className={`text-lg font-semibold cursor-pointer hover:text-blue-600 ${darkMode ? 'text-white' : 'text-gray-800'}`} onClick={() => handleEditEpisode(episode)}>
                               {episode.title}
                             </h3>
                             <div className="flex gap-1">
@@ -951,7 +958,7 @@ function App() {
                       {/* Scenes List */}
                       <div className="flex-1 space-y-0.5">
                         {episode.scenes.length === 0 ? (
-                          <p className="text-gray-500 italic text-sm">No scenes yet</p>
+                          <p className={`italic text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No scenes yet</p>
                         ) : (
                           episode.scenes.map(scene => (
                             <div key={scene.id} className="flex justify-between items-center p-1 rounded text-sm">
@@ -977,10 +984,10 @@ function App() {
                       </div>
                       
                       {/* Progress Bar */}
-                      <div className="mt-3 pt-2 border-t border-gray-200">
+                      <div className={`mt-3 pt-2 border-t ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
                         <div className="flex justify-between items-center mb-1">
-                          <span className="text-xs text-gray-600">Progress</span>
-                          <span className="text-xs font-medium text-gray-700">{getEpisodeProgressText(episode)}</span>
+                          <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Progress</span>
+                          <span className={`text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{getEpisodeProgressText(episode)}</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div 
@@ -1142,7 +1149,7 @@ function App() {
 
               </div>
             ) : (
-              <div className="text-center text-gray-500 mt-8">
+              <div className={`text-center mt-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 <p className="text-lg">
                   No groups yet. Create your first group to get started!
                 </p>
@@ -1150,7 +1157,7 @@ function App() {
             )}
 
             {selectedGroupId && getSelectedGroup()?.episodes.length === 0 && (
-              <div className="text-center text-gray-500 mt-8">
+              <div className={`text-center mt-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 <p className="text-lg">
                   No episodes yet. Create your first episode to get started!
                 </p>
@@ -1162,9 +1169,9 @@ function App() {
         {/* Statistics Popup */}
         {showStats && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-xl p-6 max-w-md w-full mx-4`}>
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800">Global Statistics</h2>
+                <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Global Statistics</h2>
                 <button
                   onClick={() => setShowStats(false)}
                   className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
@@ -1175,46 +1182,46 @@ function App() {
               
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{stats.totalGroups}</div>
-                    <div className="text-sm text-blue-700">Total Groups</div>
+                  <div className={`${darkMode ? 'bg-blue-900' : 'bg-blue-50'} p-3 rounded-lg`}>
+                    <div className={`text-2xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{stats.totalGroups}</div>
+                    <div className={`text-sm ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Total Groups</div>
                   </div>
-                  <div className="bg-green-50 p-3 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{stats.totalEpisodes}</div>
-                    <div className="text-sm text-green-700">Total Episodes</div>
+                  <div className={`${darkMode ? 'bg-green-900' : 'bg-green-50'} p-3 rounded-lg`}>
+                    <div className={`text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{stats.totalEpisodes}</div>
+                    <div className={`text-sm ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Total Episodes</div>
                   </div>
                 </div>
                 
-                <div className="bg-purple-50 p-3 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">{stats.totalScenes}</div>
-                  <div className="text-sm text-purple-700">Total Scenes</div>
+                <div className={`${darkMode ? 'bg-purple-900' : 'bg-purple-50'} p-3 rounded-lg`}>
+                  <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{stats.totalScenes}</div>
+                  <div className={`text-sm ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Total Scenes</div>
                 </div>
                 
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-gray-800">Scene Status Breakdown:</h3>
+                  <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Scene Status Breakdown:</h3>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Not Ready:</span>
-                      <span className="font-medium text-gray-800">{stats.notReadyScenes}</span>
+                      <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Not Ready:</span>
+                      <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>{stats.notReadyScenes}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Ready to Edit:</span>
-                      <span className="font-medium text-orange-600">{stats.readyToEditScenes}</span>
+                      <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Ready to Edit:</span>
+                      <span className={`font-medium ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>{stats.readyToEditScenes}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Done:</span>
-                      <span className="font-medium text-green-600">{stats.doneScenes}</span>
+                      <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Done:</span>
+                      <span className={`font-medium ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{stats.doneScenes}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Cancelled:</span>
-                      <span className="font-medium text-red-600">{stats.cancelledScenes}</span>
+                      <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Cancelled:</span>
+                      <span className={`font-medium ${darkMode ? 'text-red-400' : 'text-red-600'}`}>{stats.cancelledScenes}</span>
                     </div>
                   </div>
                 </div>
                 
-                <div className="bg-yellow-50 p-3 rounded-lg">
-                  <div className="text-2xl font-bold text-yellow-600">{stats.completedEpisodes}</div>
-                  <div className="text-sm text-yellow-700">Completed Episodes</div>
+                <div className={`${darkMode ? 'bg-yellow-900' : 'bg-yellow-50'} p-3 rounded-lg`}>
+                  <div className={`text-2xl font-bold ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>{stats.completedEpisodes}</div>
+                  <div className={`text-sm ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>Completed Episodes</div>
                 </div>
               </div>
             </div>
