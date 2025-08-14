@@ -1184,7 +1184,7 @@ function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className={`${darkMode ? 'bg-blue-900' : 'bg-blue-50'} p-3 rounded-lg`}>
                     <div className={`text-2xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{stats.totalGroups}</div>
-                    <div className={`text-sm ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Total Groups</div>
+                    <div className={`text-sm ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Total Blocks</div>
                   </div>
                   <div className={`${darkMode ? 'bg-green-900' : 'bg-green-50'} p-3 rounded-lg`}>
                     <div className={`text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{stats.totalEpisodes}</div>
