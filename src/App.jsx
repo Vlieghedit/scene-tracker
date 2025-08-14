@@ -1,32 +1,5 @@
 import { useState, useEffect } from 'react';
-
-// Local storage service
-const storageService = {
-  // Groups with nested episodes and scenes
-  getGroups: () => {
-    const groups = localStorage.getItem('episodeTracker_groups');
-    return groups ? JSON.parse(groups) : [];
-  },
-  saveGroups: (groups) => {
-    localStorage.setItem('episodeTracker_groups', JSON.stringify(groups));
-  },
-
-  // Selected group
-  getSelectedGroupId: () => {
-    return localStorage.getItem('episodeTracker_selectedGroupId');
-  },
-  saveSelectedGroupId: (groupId) => {
-    localStorage.setItem('episodeTracker_selectedGroupId', groupId);
-  },
-
-  // Dark mode preference
-  getDarkMode: () => {
-    return localStorage.getItem('episodeTracker_darkMode') === 'true';
-  },
-  saveDarkMode: (darkMode) => {
-    localStorage.setItem('episodeTracker_darkMode', darkMode.toString());
-  }
-};
+import { storageService } from './storageService.js';
 
 function App() {
   const [groups, setGroups] = useState([]);
@@ -47,45 +20,76 @@ function App() {
   const [startingEpisodeNumber, setStartingEpisodeNumber] = useState(1);
   const [darkMode, setDarkMode] = useState(false);
 
-  // Load data from localStorage on component mount
+  // Load data from storage on component mount
   useEffect(() => {
-    const savedGroups = storageService.getGroups();
-    const savedSelectedGroupId = storageService.getSelectedGroupId();
-    const savedDarkMode = storageService.getDarkMode();
+    const loadData = async () => {
+      try {
+        const [savedGroups, savedSelectedGroupId, savedDarkMode] = await Promise.all([
+          storageService.getGroups(),
+          storageService.getSelectedGroupId(),
+          storageService.getDarkMode()
+        ]);
 
-    setGroups(savedGroups);
-    // Convert to number if it's a string
-    setSelectedGroupId(savedSelectedGroupId ? parseInt(savedSelectedGroupId) : null);
-    setDarkMode(savedDarkMode);
+        setGroups(savedGroups);
+        // Convert to number if it's a string
+        setSelectedGroupId(savedSelectedGroupId ? parseInt(savedSelectedGroupId) : null);
+        setDarkMode(savedDarkMode);
 
-    // If no groups exist, create a default group
-    if (savedGroups.length === 0) {
-      const defaultGroup = {
-        id: Date.now(),
-        title: 'Default Group',
-        episodes: [],
-        created_at: new Date().toISOString()
-      };
-      setGroups([defaultGroup]);
-      setSelectedGroupId(defaultGroup.id);
-      storageService.saveGroups([defaultGroup]);
-      storageService.saveSelectedGroupId(defaultGroup.id);
-    }
+        // If no groups exist, create a default group
+        if (savedGroups.length === 0) {
+          const defaultGroup = {
+            id: Date.now(),
+            title: 'Default Group',
+            episodes: [],
+            created_at: new Date().toISOString()
+          };
+          setGroups([defaultGroup]);
+          setSelectedGroupId(defaultGroup.id);
+          await storageService.saveGroups([defaultGroup]);
+          await storageService.saveSelectedGroupId(defaultGroup.id);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+
+    loadData();
   }, []);
 
-  // Save data to localStorage whenever it changes
+  // Save data to storage whenever it changes
   useEffect(() => {
-    storageService.saveGroups(groups);
+    const saveGroups = async () => {
+      try {
+        await storageService.saveGroups(groups);
+      } catch (error) {
+        console.error('Error saving groups:', error);
+      }
+    };
+    saveGroups();
   }, [groups]);
 
   useEffect(() => {
-    if (selectedGroupId) {
-      storageService.saveSelectedGroupId(selectedGroupId);
-    }
+    const saveSelectedGroupId = async () => {
+      if (selectedGroupId) {
+        try {
+          await storageService.saveSelectedGroupId(selectedGroupId);
+        } catch (error) {
+          console.error('Error saving selected group ID:', error);
+        }
+      }
+    };
+    saveSelectedGroupId();
   }, [selectedGroupId]);
 
   useEffect(() => {
-    storageService.saveDarkMode(darkMode);
+    const saveDarkMode = async () => {
+      try {
+        await storageService.saveDarkMode(darkMode);
+      } catch (error) {
+        console.error('Error saving dark mode:', error);
+      }
+    };
+    saveDarkMode();
   }, [darkMode]);
 
   // Focus on number input when Add Scene modal opens
