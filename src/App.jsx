@@ -421,7 +421,7 @@ function App() {
     const episode = group?.episodes.find(ep => ep.id === episodeId);
     if (!episode) return;
 
-    const states = ['not-ready', 'in-progress', 'ready-to-edit', 'done', 'delayed', 'cancelled'];
+    const states = ['not-ready', 'ready-to-edit', 'in-progress', 'done', 'delayed', 'cancelled'];
     
     const updatedGroups = groups.map(group =>
       group.id === groupId
