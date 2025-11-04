@@ -408,7 +408,7 @@ function App() {
     
     if (!scene) return;
 
-    const states = ['not-ready', 'in-progress', 'ready-to-edit', 'done', 'delayed', 'cancelled'];
+    const states = ['not-ready', 'ready-to-edit', 'in-progress',  'done', 'delayed', 'cancelled'];
     const currentIndex = states.indexOf(scene.state);
     const nextIndex = (currentIndex + 1) % states.length;
     const newState = states[nextIndex];
@@ -449,8 +449,8 @@ function App() {
   const getSceneStateColor = (state) => {
     switch (state) {
       case 'not-ready': return 'bg-gray-800 text-white';
-      case 'in-progress': return 'bg-yellow-700 text-white';
       case 'ready-to-edit': return 'bg-orange-500 text-white';
+      case 'in-progress': return 'bg-yellow-700 text-white';
       case 'done': return 'bg-green-500 text-white';
       case 'delayed': return 'bg-gray-500 text-white';
       case 'cancelled': return 'bg-red-500 text-white';
@@ -462,8 +462,8 @@ function App() {
     if (darkMode) {
       switch (state) {
         case 'not-ready': return 'text-white';
-        case 'in-progress': return 'text-yellow-300';
         case 'ready-to-edit': return 'text-orange-400';
+        case 'in-progress': return 'text-yellow-300';
         case 'done': return 'text-green-400';
         case 'delayed': return 'text-gray-300';
         case 'cancelled': return 'text-red-400';
@@ -471,9 +471,9 @@ function App() {
       }
     } else {
       switch (state) {
-        case 'not-ready': return 'text-gray-700';
-        case 'in-progress': return 'text-yellow-700';
+        case 'not-ready': return 'text-gray-700';        
         case 'ready-to-edit': return 'text-orange-600';
+        case 'in-progress': return 'text-yellow-700';
         case 'done': return 'text-green-600';
         case 'delayed': return 'text-gray-600';
         case 'cancelled': return 'text-red-600';
@@ -484,9 +484,9 @@ function App() {
 
   const getSceneStateText = (state) => {
     switch (state) {
-      case 'not-ready': return 'Not Ready';
-      case 'in-progress': return 'In Progress';
+      case 'not-ready': return 'Not Ready';     
       case 'ready-to-edit': return 'Ready to Edit';
+      case 'in-progress': return 'In Progress';
       case 'done': return 'Done';
       case 'delayed': return 'Delayed';
       case 'cancelled': return 'Cancelled';
